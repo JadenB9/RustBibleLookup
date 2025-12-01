@@ -4,40 +4,45 @@ A simple Bible verse lookup program written in Rust.
 
 ## How to Run
 
-1. Open your terminal
 
-2. Go to the project folder:
-   ```
-   cd RustBibleLookup
-   ```
+1. Go to the project folder:
 
-3. Run the program:
+2. Run the program:
    ```
    cargo run
    ```
 
-4. Follow the prompts:
-   - Type the book name (like JOHN or GENESIS)
-   - Type the chapter number
-   - Type the verse number
-
-5. The verse will display on your screen and save to verses.txt
+3. Follow the programs prompts:
+'''
+Please enter the reference of the verse you would like to retrieve
+ the book: Genesis
+ the chapter: 1
+ the verse: 1
+The verse you requested is:
+GENESIS 1:1 In the beginning God created the heaven and the earth.
+Would you like to look up another verse (Y/N)?
+'''
+5. The verse will save to verses.txt
 
 6. Type Y to look up another verse or N to quit
 
-## Example
-
-```
-Please enter the reference of the verse you would like to retrieve
- the book: JOHN
- the chapter: 3
- the verse: 16
-The verse you requested is:
-JOHN 3:16 For God so loved the world, that he gave his only begotten Son, that
-whosoever believeth in him should not perish, but have everlasting life.
-Would you like to look up another verse (Y/N)? N
-```
+## Test Cases
+GENESIS 1:1 (test first verse in Bible)
+JAB 42:17 (note misspelling of book – test for non-existent book)
+JOB 43:17 (test non-existent chapter)
+JOB 42:18 (test non-existent verse)
+PSALMS 3:5 (test a verse in Psalms)
+SONG OF SOLOMON 6:7 (test multi-word book name)
+MARK 16:20 (test last verse in last chapter of some book)
+REVELATION 22:21 (test last verse in Bible)
+GENESIS 50:26 (test last verse in last chapter in first book)
+PSALMS 119:105 (test three-digit chapter and verse number)
+ISAIAH 42:0 (test a non-existent zeroth verse)
+PHILEMON 1:1 (test verse in book of only one chapter)
+FIRST PETER 3:5 (test two-word book name)
+REVELATION 23:1 (test non-existent last chapter in last book)
+REVELATION 22:22 (test non-existent last verse in last chapter)
 
 ## Authors
 
-Jaden Butler and Isaac Lloyd
+Jaden Butler & Isaac Lloyd
