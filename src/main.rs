@@ -11,28 +11,25 @@ use std::io::{self, BufRead, BufReader, Write};
 fn main() {
     // load the abbreviations file
     let abbr = load_abbreviations("Bible_Abbreviations.csv");
-
     // load the whole Bible into memory
     let lines = load_bible("Bible.txt");
 
-    // keep asking for verses until user says no
+    // main loop - keep requesting verses until N
     loop {
         println!("Please enter the reference of the verse you would like to retrieve");
 
-        // get the book name
+        // book name
         print!(" the book: ");
         io::stdout().flush().unwrap();
         let mut book = String::new();
         io::stdin().read_line(&mut book).unwrap();
         let book = book.trim().to_uppercase();
-
         // get the chapter number
         print!(" the chapter: ");
         io::stdout().flush().unwrap();
         let mut chapter = String::new();
         io::stdin().read_line(&mut chapter).unwrap();
         let chapter: i32 = chapter.trim().parse().unwrap();
-
         // get the verse number
         print!(" the verse: ");
         io::stdout().flush().unwrap();
@@ -40,24 +37,24 @@ fn main() {
         io::stdin().read_line(&mut verse).unwrap();
         let verse: i32 = verse.trim().parse().unwrap();
 
-        // check if they typed an abbreviation and convert it
+        // check for abbvr
         let full_book = if abbr.contains_key(&book) {
             abbr.get(&book).unwrap().clone()
         } else {
             book.clone()
         };
 
-        // try to find the verse
+        // Actually try to find the verse
         let result = find_verse(&lines, &full_book, chapter, verse);
 
         if result.0 {
-            // we found it!
+            //found
             let verse_text = &result.1;
             let reference = format!("{} {}:{}", full_book, chapter, verse);
             println!("The verse you requested is:");
             pretty_print(&reference, verse_text);
 
-            // append to the output file
+            // add to verses.txt
             let mut out_file = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -65,7 +62,7 @@ fn main() {
                 .unwrap();
             writeln!(out_file, "{} {}", reference, verse_text).unwrap();
         } else {
-            // didn't find it - tell them what's wrong
+            // didn't find it
             let error_type = &result.1;
             if error_type == "book" {
                 println!("The Bible does not contain the book \"{}\".", full_book);
@@ -75,8 +72,6 @@ fn main() {
                 println!("Chapter {} of {} does not have verse {}.", chapter, full_book, verse);
             }
         }
-
-        // see if they want to keep going
         print!("Would you like to look up another verse (Y/N)? ");
         io::stdout().flush().unwrap();
         let mut response = String::new();
@@ -101,7 +96,7 @@ fn load_abbreviations(filename: &str) -> HashMap<String, String> {
             let abbrev = parts[0].trim().to_uppercase();
             let full_name = parts[1].trim().to_uppercase();
 
-            // store both the abbreviation and the full name
+            // store both the abbreviation and full name
             abbr.insert(abbrev, full_name.clone());
             abbr.insert(full_name.clone(), full_name);
         }
@@ -134,14 +129,13 @@ fn find_verse(lines: &Vec<String>, book: &str, chapter: i32, verse: i32) -> (boo
             curr_book = line[12..].trim().to_uppercase();
             curr_chap = 0;
         } else if line.starts_with("CHAPTER ") {
-            // found a new chapter
+            // found new chapter
             curr_chap = line[8..].trim().parse().unwrap_or(0);
         } else if line.starts_with("PSALM ") {
-            // psalms are formatted differently
+            // for the different format in psalms
             curr_chap = line[6..].trim().parse().unwrap_or(0);
         } else if !curr_book.is_empty() && curr_chap > 0 && !line.trim().is_empty()
                   && line.chars().next().unwrap().is_digit(10) {
-            // this looks like a verse line
             let parts: Vec<&str> = line.trim().splitn(2, ' ').collect();
             if parts.len() == 2 {
                 let verse_num: i32 = parts[0].parse().unwrap_or(0);
@@ -162,8 +156,6 @@ fn find_verse(lines: &Vec<String>, book: &str, chapter: i32, verse: i32) -> (boo
             }
         }
     }
-
-    // we didn't find it - figure out why
     if !chap_verses.contains_key(book) {
         return (false, "book".to_string());
     } else if !chap_verses.get(book).unwrap().contains_key(&chapter) {
@@ -178,9 +170,7 @@ fn find_verse(lines: &Vec<String>, book: &str, chapter: i32, verse: i32) -> (boo
 fn pretty_print(reference: &str, text: &str) {
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut line = format!("{} ", reference);
-
     for word in words {
-        // check if adding this word would make the line too long
         if line.len() + word.len() + 1 > 80 {
             println!("{}", line);
             line = format!("{} ", word);
@@ -189,8 +179,6 @@ fn pretty_print(reference: &str, text: &str) {
             line.push(' ');
         }
     }
-
-    // print whatever's left
     if !line.trim().is_empty() {
         println!("{}", line);
     }

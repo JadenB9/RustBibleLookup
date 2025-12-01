@@ -44,7 +44,8 @@ Would you like to look up another verse (Y/N)?
     FIRST PETER 3:5 (test two-word book name)   
     REVELATION 23:1 (test non-existent last chapter in last book)   
     REVELATION 22:22 (test non-existent last verse in last chapter)
-    ```
+    ``` 
+
 ## Authors
 
 Jaden Butler & Isaac Lloyd
