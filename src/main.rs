@@ -1,6 +1,8 @@
-// Bible Verse Lookup Program
-// Reads a Bible text file and finds specific verses based on user input
-// Jaden Butler and Isaac Lloyd
+// Rust Bible Verse Lookup Program
+// Reads Bible.txt and returns the correct verse with pretty print. 
+// If the verse does not exist, it throws the correct error.
+// Authored by: Jaden Butler and Isaac Lloyd
+
 
 use std::collections::HashMap;
 use std::fs::File;
