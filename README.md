@@ -13,22 +13,21 @@ A simple Bible verse lookup program written in Rust.
    ```
 
 3. Follow the programs prompts:
-    ```
-Please enter the reference of the verse you would like to retrieve
+```Please enter the reference of the verse you would like to retrieve
  the book: Genesis
  the chapter: 1
  the verse: 1
 The verse you requested is:
 GENESIS 1:1 In the beginning God created the heaven and the earth.
+```
 Would you like to look up another verse (Y/N)?
-    ```
+
 5. The verse will save to verses.txt
 
 6. Type Y to look up another verse or N to quit
 
 ## Test Cases
-    ```
-GENESIS 1:1 (test first verse in Bible)     
+``` GENESIS 1:1 (test first verse in Bible)     
 JAB 42:17 (note misspelling of book – test for non-existent book)   
 JOB 43:17 (test non-existent chapter)   
 JOB 42:18 (test non-existent verse)     
@@ -42,8 +41,8 @@ ISAIAH 42:0 (test a non-existent zeroth verse)
 PHILEMON 1:1 (test verse in book of only one chapter)   
 FIRST PETER 3:5 (test two-word book name)   
 REVELATION 23:1 (test non-existent last chapter in last book)   
-REVELATION 22:22 (test non-existent last verse in last chapter) 
-    ```
+REVELATION 22:22 (test non-existent last verse in last chapter)
+```
 ## Authors
 
 Jaden Butler & Isaac Lloyd
