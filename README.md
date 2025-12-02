@@ -28,7 +28,7 @@ Would you like to look up another verse (Y/N)?
 6. Type Y to look up another verse or N to quit
 
 ## Test Cases
-    ```
+   ```
     GENESIS 1:1 (test first verse in Bible)     
     JAB 42:17 (note misspelling of book – test for non-existent book)   
     JOB 43:17 (test non-existent chapter)   
@@ -44,7 +44,7 @@ Would you like to look up another verse (Y/N)?
     FIRST PETER 3:5 (test two-word book name)   
     REVELATION 23:1 (test non-existent last chapter in last book)   
     REVELATION 22:22 (test non-existent last verse in last chapter)
-    ``` 
+   ``` 
 
 ## Authors
 
