@@ -8,11 +8,17 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 
+// struct to hold all the bible data after we parse it
+struct Bible {
+    // book name -> chapter number -> verse number -> verse text
+    books: HashMap<String, HashMap<i32, HashMap<i32, String>>>,
+}
+
 fn main() {
     // load the abbreviations file
     let abbr = load_abbreviations("Bible_Abbreviations.csv");
-    // load the whole Bible into memory
-    let lines = load_bible("Bible.txt");
+    // load the whole Bible into memory (parsed this time)
+    let bible = load_bible("Bible.txt");
 
     // main loop - keep requesting verses until N
     loop {
@@ -45,7 +51,7 @@ fn main() {
         };
 
         // Actually try to find the verse
-        let result = find_verse(&lines, &full_book, chapter, verse);
+        let result = find_verse(&bible, &full_book, chapter, verse);
 
         if result.0 {
             //found
@@ -105,66 +111,91 @@ fn load_abbreviations(filename: &str) -> HashMap<String, String> {
     abbr
 }
 
-fn load_bible(filename: &str) -> Vec<String> {
+fn load_bible(filename: &str) -> Bible {
     let file = File::open(filename).unwrap();
     let reader = BufReader::new(file);
 
-    let mut lines = Vec::new();
-    for line in reader.lines() {
-        lines.push(line.unwrap());
-    }
+    let mut bible = Bible {
+        books: HashMap::new(),
+    };
 
-    lines
-}
-
-fn find_verse(lines: &Vec<String>, book: &str, chapter: i32, verse: i32) -> (bool, String) {
     let mut curr_book = String::new();
     let mut curr_chap = 0;
-    let mut chap_verses: HashMap<String, HashMap<i32, i32>> = HashMap::new();
 
-    // go through every line in the Bible
-    for line in lines {
+    // go through every line in the Bible and parse it into our struct
+    for line in reader.lines() {
+        let line = line.unwrap();
+
         if line.starts_with("THE BOOK OF ") {
             // found a new book
             curr_book = line[12..].trim().to_uppercase();
             curr_chap = 0;
+            // add the book to our hashmap if it doesn't exist
+            if !bible.books.contains_key(&curr_book) {
+                bible.books.insert(curr_book.clone(), HashMap::new());
+            }
         } else if line.starts_with("CHAPTER ") {
             // found new chapter
             curr_chap = line[8..].trim().parse().unwrap_or(0);
+            // add the chapter to the book
+            if !curr_book.is_empty() && curr_chap > 0 {
+                let book_map = bible.books.get_mut(&curr_book).unwrap();
+                if !book_map.contains_key(&curr_chap) {
+                    book_map.insert(curr_chap, HashMap::new());
+                }
+            }
         } else if line.starts_with("PSALM ") {
             // for the different format in psalms
             curr_chap = line[6..].trim().parse().unwrap_or(0);
+            // add the chapter to the book
+            if !curr_book.is_empty() && curr_chap > 0 {
+                let book_map = bible.books.get_mut(&curr_book).unwrap();
+                if !book_map.contains_key(&curr_chap) {
+                    book_map.insert(curr_chap, HashMap::new());
+                }
+            }
         } else if !curr_book.is_empty() && curr_chap > 0 && !line.trim().is_empty()
                   && line.chars().next().unwrap().is_digit(10) {
+            // this is a verse line
             let parts: Vec<&str> = line.trim().splitn(2, ' ').collect();
             if parts.len() == 2 {
                 let verse_num: i32 = parts[0].parse().unwrap_or(0);
-                let verse_text = parts[1];
+                let verse_text = parts[1].to_string();
 
-                // keep track of how many verses each chapter has
-                if !chap_verses.contains_key(&curr_book) {
-                    chap_verses.insert(curr_book.clone(), HashMap::new());
-                }
-                let book_map = chap_verses.get_mut(&curr_book).unwrap();
-                let max_verse = book_map.get(&curr_chap).unwrap_or(&0);
-                book_map.insert(curr_chap, std::cmp::max(*max_verse, verse_num));
-
-                // is this the verse we're looking for?
-                if curr_book == book && curr_chap == chapter && verse_num == verse {
-                    return (true, verse_text.to_string());
-                }
+                // add the verse to the chapter
+                let book_map = bible.books.get_mut(&curr_book).unwrap();
+                let chap_map = book_map.get_mut(&curr_chap).unwrap();
+                chap_map.insert(verse_num, verse_text);
             }
         }
     }
-    if !chap_verses.contains_key(book) {
+
+    bible
+}
+
+fn find_verse(bible: &Bible, book: &str, chapter: i32, verse: i32) -> (bool, String) {
+    // check if the book exists
+    if !bible.books.contains_key(book) {
         return (false, "book".to_string());
-    } else if !chap_verses.get(book).unwrap().contains_key(&chapter) {
+    }
+
+    let book_map = bible.books.get(book).unwrap();
+
+    // check if the chapter exists
+    if !book_map.contains_key(&chapter) {
         return (false, "chapter".to_string());
-    } else if verse > *chap_verses.get(book).unwrap().get(&chapter).unwrap() || verse < 1 {
-        return (false, "verse".to_string());
-    } else {
+    }
+
+    let chap_map = book_map.get(&chapter).unwrap();
+
+    // check if the verse exists
+    if !chap_map.contains_key(&verse) || verse < 1 {
         return (false, "verse".to_string());
     }
+
+    // found it!
+    let verse_text = chap_map.get(&verse).unwrap();
+    return (true, verse_text.clone());
 }
 
 fn pretty_print(reference: &str, text: &str) {
