@@ -3,7 +3,6 @@
 // If the verse does not exist, it throws the correct error.
 // Authored by: Jaden Butler and Isaac Lloyd
 
-
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
@@ -90,7 +89,6 @@ fn main() {
 
 fn load_abbreviations(filename: &str) -> HashMap<String, String> {
     let mut abbr = HashMap::new();
-
     let file = File::open(filename).unwrap();
     let reader = BufReader::new(file);
 
@@ -107,18 +105,15 @@ fn load_abbreviations(filename: &str) -> HashMap<String, String> {
             abbr.insert(full_name.clone(), full_name);
         }
     }
-
     abbr
 }
 
 fn load_bible(filename: &str) -> Bible {
     let file = File::open(filename).unwrap();
     let reader = BufReader::new(file);
-
     let mut bible = Bible {
         books: HashMap::new(),
     };
-
     let mut curr_book = String::new();
     let mut curr_chap = 0;
 
@@ -169,7 +164,6 @@ fn load_bible(filename: &str) -> Bible {
             }
         }
     }
-
     bible
 }
 
@@ -178,21 +172,16 @@ fn find_verse(bible: &Bible, book: &str, chapter: i32, verse: i32) -> (bool, Str
     if !bible.books.contains_key(book) {
         return (false, "book".to_string());
     }
-
     let book_map = bible.books.get(book).unwrap();
-
     // check if the chapter exists
     if !book_map.contains_key(&chapter) {
         return (false, "chapter".to_string());
     }
-
     let chap_map = book_map.get(&chapter).unwrap();
-
     // check if the verse exists
     if !chap_map.contains_key(&verse) || verse < 1 {
         return (false, "verse".to_string());
     }
-
     // found it!
     let verse_text = chap_map.get(&verse).unwrap();
     return (true, verse_text.clone());
