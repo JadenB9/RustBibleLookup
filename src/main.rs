@@ -1,8 +1,12 @@
-// Rust Bible Verse Lookup Program
+// CS-3210-01 Programming Language Survey 2025FA
+// Authored by: Jaden Butler and Isaac Lloyd
+// Last Updated: Sun, Dec 7th 2025
+
+// L6: Rust Bible Verse Lookup Program
 // Input bible reference and will look it up in Bible.txt
 // and return the correct verse with pretty print. 
 // If the verse does not exist, it throws the correct error.
-// Authored by: Jaden Butler and Isaac Lloyd
+// Will fail if Bible.txt or Bible_Abbreviations.csv do not exist
 
 use std::collections::HashMap;
 use std::fs::{OpenOptions};
