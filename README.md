@@ -1,51 +1,54 @@
 # RustBibleLookup
 
-A simple Bible verse lookup program written in Rust.
+A little command-line Bible verse lookup written in Rust, as a way to learn the
+language. You type a book, chapter, and verse; it prints the verse and appends
+it to `verses.txt` so you keep a running list of everything you've looked up.
 
-## How to Run
+No dependencies — just the standard library. The full KJV text (public domain)
+ships in `Bible.txt` and is loaded into a nested
+`HashMap<book, HashMap<chapter, HashMap<verse, text>>>` at startup, so lookups
+are instant. `Bible_Abbreviations.csv` lets you type `Gen` or `Ps` instead of
+the full book name.
 
+## Run
 
-1. Go to the project folder:
+```bash
+cargo run
+```
 
-2. Run the program:
-   ```
-   cargo run
-   ```
+Then follow the prompts:
 
-3. Follow the programs prompts:
-    ```
-    Please enter the reference of the verse you would like to retrieve
-        the book: Genesis
-        the chapter: 1
-        the verse: 1
-    The verse you requested is:
-    GENESIS 1:1 In the beginning God created the heaven and the earth.
-    ```
+```
+Please enter the reference of the verse you would like to find
+ Book: John
+ Chapter: 3
+ Verse: 16
+The verse you requested is:
+
+JOHN 3:16:
+For God so loved the world, that he gave his only begotten Son, that
+whosoever believeth in him should not perish, but have everlasting life.
+
 Would you like to look up another verse (Y/N)?
+```
 
-5. The verse will save to verses.txt
+Answer `Y` to look up another or `N` to quit. Every verse you retrieve is saved
+to `verses.txt`.
 
-6. Type Y to look up another verse or N to quit
+## What it handles
 
-## Test Cases
-   ```
-    GENESIS 1:1 (test first verse in Bible)     
-    JAB 42:17 (note misspelling of book – test for non-existent book)   
-    JOB 43:17 (test non-existent chapter)   
-    JOB 42:18 (test non-existent verse)     
-    PSALMS 3:5 (test a verse in Psalms)     
-    SONG OF SOLOMON 6:7 (test multi-word book name)     
-    MARK 16:20 (test last verse in last chapter of some book)   
-    REVELATION 22:21 (test last verse in Bible)     
-    GENESIS 50:26 (test last verse in last chapter in first book)   
-    PSALMS 119:105 (test three-digit chapter and verse number)  
-    ISAIAH 42:0 (test a non-existent zeroth verse)  
-    PHILEMON 1:1 (test verse in book of only one chapter)   
-    FIRST PETER 3:5 (test two-word book name)   
-    REVELATION 23:1 (test non-existent last chapter in last book)   
-    REVELATION 22:22 (test non-existent last verse in last chapter)
-   ``` 
+Input is validated at each level, so these all fail cleanly instead of crashing:
 
-## Authors
+| Input | Result |
+|---|---|
+| `JAB 42:17` | unknown book |
+| `JOB 43:17` | chapter doesn't exist |
+| `JOB 42:18` | verse doesn't exist |
+| `SONG OF SOLOMON 6:7` | multi-word book names work |
+| `REVELATION 22:21` | last verse in the Bible |
 
-Jaden Butler & Isaac Lloyd
+## Layout
+
+- `src/main.rs` — prompt loop, lookup, and the two loaders (`load_bible`, `load_abbreviations`)
+- `Bible.txt` — KJV source text (public domain)
+- `Bible_Abbreviations.csv` — abbreviation → full book name
