@@ -215,7 +215,9 @@ fn find_verse(bible: &Bible, book: &str, chapter: &str, verse: &str) -> (bool, S
 
 fn pretty_print(text: &str) -> String {
     let mut result = String::new();
-    let mut text = text.to_string();
+    // work in chars, not bytes, so a non-ASCII character can't land us
+    // in the middle of a codepoint when we slice
+    let mut text: Vec<char> = text.chars().collect();
 
     // while there are still more than 80 chars left to wrap
     while text.len() > 80 {
@@ -223,22 +225,24 @@ fn pretty_print(text: &str) -> String {
         let mut cut_point = 80;
 
         // find the last space before 81
-        for (i, ch) in text.chars().enumerate() {
+        for (i, ch) in text.iter().enumerate() {
             if i >= 80 {
                 break;
             }
-            if ch == ' ' {
+            if *ch == ' ' {
                 cut_point = i;
             }
         }
 
-        result.push_str(&text[..cut_point]);
+        result.extend(&text[..cut_point]);
         result.push('\n');
 
-        text = text[cut_point..].trim_start().to_string();
+        // drop what we printed plus any leading whitespace
+        let rest: String = text[cut_point..].iter().collect();
+        text = rest.trim_start().chars().collect();
     }
 
-    result.push_str(&text);
+    result.extend(&text);
 
     result
 }
