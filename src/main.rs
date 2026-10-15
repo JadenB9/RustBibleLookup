@@ -1,27 +1,31 @@
 // CS-3210-01 Programming Language Survey 2025FA
 // Authored by: Jaden Butler and Isaac Lloyd
-// Last Updated: Sun, Dec 7th 2025
+// Last Updated: Wed, Oct 15th 2026
 
 // L6: Rust Bible Verse Lookup Program
 // Input bible reference and will look it up in Bible.txt
 // and return the correct verse with pretty print.
 // If the verse does not exist, it throws the correct error.
-// Will fail if Bible.txt or Bible_Abbreviations.csv do not exist
+// Bible.txt and Bible_Abbreviations.csv are baked into the binary
+// at compile time, so it runs from any directory.
 
 use std::collections::HashMap;
 use std::fs::OpenOptions;
-use std::fs::read_to_string;
 use std::io::{Write, stdin, stdout};
+
+// the whole KJV and the abbreviation table, embedded at compile time
+const BIBLE_TEXT: &str = include_str!("../Bible.txt");
+const ABBR_TEXT: &str = include_str!("../Bible_Abbreviations.csv");
 
 // define Bible as a big hashmap of maps (book: chapter: verse)
 type Bible = HashMap<String, HashMap<String, HashMap<String, String>>>;
 
 fn main() {
-    // load the abbreviations file
-    let abbr = load_abbreviations("Bible_Abbreviations.csv");
+    // load the abbreviations table
+    let abbr = load_abbreviations(ABBR_TEXT);
 
     // load the whole Bible into memory
-    let bible = load_bible("Bible.txt");
+    let bible = load_bible(BIBLE_TEXT);
 
     // main loop - keep requesting verses until user quits
     loop {
@@ -106,10 +110,10 @@ fn main() {
     }
 }
 
-fn load_abbreviations(filename: &str) -> HashMap<String, String> {
+fn load_abbreviations(text: &str) -> HashMap<String, String> {
     let mut abbr = HashMap::new();
 
-    for line in read_to_string(filename).unwrap().lines() {
+    for line in text.lines() {
         // split into abbr and full
         let parts: Vec<&str> = line.split(',').collect();
 
@@ -125,14 +129,14 @@ fn load_abbreviations(filename: &str) -> HashMap<String, String> {
     abbr
 }
 
-fn load_bible(filename: &str) -> Bible {
+fn load_bible(text: &str) -> Bible {
     let mut bible: Bible = HashMap::new();
 
     let mut curr_book = String::new();
     let mut curr_chap = String::new();
 
     // go through every line in the Bible and parse it into our struct
-    for line in read_to_string(filename).unwrap().lines() {
+    for line in text.lines() {
         let line = line.to_string();
 
         if line.trim().is_empty() {
