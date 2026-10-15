@@ -4,14 +4,14 @@
 
 // L6: Rust Bible Verse Lookup Program
 // Input bible reference and will look it up in Bible.txt
-// and return the correct verse with pretty print. 
+// and return the correct verse with pretty print.
 // If the verse does not exist, it throws the correct error.
 // Will fail if Bible.txt or Bible_Abbreviations.csv do not exist
 
 use std::collections::HashMap;
-use std::fs::{OpenOptions};
-use std::io::{stdin, stdout, Write};
+use std::fs::OpenOptions;
 use std::fs::read_to_string;
+use std::io::{Write, stdin, stdout};
 
 // define Bible as a big hashmap of maps (book: chapter: verse)
 type Bible = HashMap<String, HashMap<String, HashMap<String, String>>>;
@@ -77,15 +77,20 @@ fn main() {
                 .open("verses.txt")
                 .unwrap();
             writeln!(out_file, "{} {}", reference, verse_text).unwrap();
-
         } else {
             // didn't find it
             if result.1 == "book" {
                 println!("The Bible does not contain the book \"{}\".", full_book);
             } else if result.1 == "chapter" {
-                println!("The book of {} does not have chapter {}.", full_book, chapter);
+                println!(
+                    "The book of {} does not have chapter {}.",
+                    full_book, chapter
+                );
             } else if result.1 == "verse" {
-                println!("Chapter {} of {} does not have verse {}.", chapter, full_book, verse);
+                println!(
+                    "Chapter {} of {} does not have verse {}.",
+                    chapter, full_book, verse
+                );
             }
         }
 
@@ -121,7 +126,7 @@ fn load_abbreviations(filename: &str) -> HashMap<String, String> {
 }
 
 fn load_bible(filename: &str) -> Bible {
-    let mut bible:Bible = HashMap::new();
+    let mut bible: Bible = HashMap::new();
 
     let mut curr_book = String::new();
     let mut curr_chap = String::new();
@@ -143,7 +148,6 @@ fn load_bible(filename: &str) -> Bible {
             if !bible.contains_key(&curr_book) {
                 bible.insert(curr_book.clone(), HashMap::new());
             }
-
         } else if line.starts_with("CHAPTER ") {
             // found new chapter
             curr_chap = line[8..].trim().to_string();
@@ -154,7 +158,6 @@ fn load_bible(filename: &str) -> Bible {
                     book_map.insert(curr_chap.clone(), HashMap::new());
                 }
             }
-
         } else if line.starts_with("PSALM ") {
             // for the different format in psalms
             curr_chap = line[6..].trim().to_string();
@@ -165,10 +168,10 @@ fn load_bible(filename: &str) -> Bible {
                     book_map.insert(curr_chap.clone(), HashMap::new());
                 }
             }
-
-        } else if !curr_book.is_empty() && !curr_chap.is_empty()
-                && line.chars().next().unwrap().is_digit(10) {
-
+        } else if !curr_book.is_empty()
+            && !curr_chap.is_empty()
+            && line.chars().next().unwrap().is_digit(10)
+        {
             // this is a verse line
             let parts: Vec<&str> = line.trim().splitn(2, ' ').collect();
             if parts.len() == 2 {
@@ -191,17 +194,17 @@ fn find_verse(bible: &Bible, book: &str, chapter: &str, verse: &str) -> (bool, S
     if !bible.contains_key(book) {
         return (false, "book".to_string());
     }
-    
+
     // check for the chapter if book exists
     if !bible[book].contains_key(chapter) {
         return (false, "chapter".to_string());
     }
-    
+
     // check for the verse if book and chapter exist
     if !bible[book][chapter].contains_key(verse) {
         return (false, "verse".to_string());
     }
-    
+
     // return the verse if book, chapter, and verse exist
     (true, bible[book][chapter][verse].clone())
 }
@@ -209,12 +212,12 @@ fn find_verse(bible: &Bible, book: &str, chapter: &str, verse: &str) -> (bool, S
 fn pretty_print(text: &str) -> String {
     let mut result = String::new();
     let mut text = text.to_string();
-    
+
     // while there are still more than 80 chars left to wrap
     while text.len() > 80 {
         // cut point is at 80 in case no spaces are found
         let mut cut_point = 80;
-        
+
         // find the last space before 81
         for (i, ch) in text.chars().enumerate() {
             if i >= 80 {
@@ -224,13 +227,13 @@ fn pretty_print(text: &str) -> String {
                 cut_point = i;
             }
         }
-        
+
         result.push_str(&text[..cut_point]);
         result.push('\n');
-        
+
         text = text[cut_point..].trim_start().to_string();
     }
-    
+
     result.push_str(&text);
 
     result
