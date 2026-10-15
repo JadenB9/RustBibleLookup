@@ -10,22 +10,49 @@
 // at compile time, so it runs from any directory.
 
 use std::collections::HashMap;
+use std::env;
 use std::fs::OpenOptions;
 use std::io::{Write, stdin, stdout};
+use std::process;
 
 // the whole KJV and the abbreviation table, embedded at compile time
 const BIBLE_TEXT: &str = include_str!("../Bible.txt");
 const ABBR_TEXT: &str = include_str!("../Bible_Abbreviations.csv");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // define Bible as a big hashmap of maps (book: chapter: verse)
 type Bible = HashMap<String, HashMap<String, HashMap<String, String>>>;
 
 fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
+
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        print_help();
+        return;
+    }
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        println!("RustBibleLookup {}", VERSION);
+        return;
+    }
+
     // load the abbreviations table
     let abbr = load_abbreviations(ABBR_TEXT);
 
     // load the whole Bible into memory
     let bible = load_bible(BIBLE_TEXT);
+
+    // one-shot mode: the reference came in on the command line
+    if !args.is_empty() {
+        let (book, chapter, verse) = match parse_reference(&args) {
+            Some(parts) => parts,
+            None => {
+                eprintln!("usage: RustBibleLookup BOOK CHAPTER:VERSE   (see --help)");
+                process::exit(2);
+            }
+        };
+        let found = lookup(&bible, &abbr, &book, &chapter, &verse);
+        process::exit(if found { 0 } else { 1 });
+    }
 
     // main loop - keep requesting verses until user quits
     loop {
@@ -55,48 +82,7 @@ fn main() {
         stdin().read_line(&mut verse).unwrap();
         let verse = verse.trim().to_string();
 
-        // check for abbvr
-        let full_book = if abbr.contains_key(&book) {
-            abbr.get(&book).unwrap().clone()
-        } else {
-            book.clone()
-        };
-
-        // Try to find the verse
-        let result = find_verse(&bible, &full_book, &chapter, &verse);
-
-        if result.0 {
-            //found
-
-            let verse_text = result.1;
-            let reference = format!("{} {}:{}", full_book, chapter, verse);
-            println!("The verse you requested is:");
-            let verse_text_pretty = pretty_print(&verse_text);
-            println!("\n{}:\n{}\n", reference, verse_text_pretty);
-
-            // add to verses.txt
-            let mut out_file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open("verses.txt")
-                .unwrap();
-            writeln!(out_file, "{} {}", reference, verse_text).unwrap();
-        } else {
-            // didn't find it
-            if result.1 == "book" {
-                println!("The Bible does not contain the book \"{}\".", full_book);
-            } else if result.1 == "chapter" {
-                println!(
-                    "The book of {} does not have chapter {}.",
-                    full_book, chapter
-                );
-            } else if result.1 == "verse" {
-                println!(
-                    "Chapter {} of {} does not have verse {}.",
-                    chapter, full_book, verse
-                );
-            }
-        }
+        lookup(&bible, &abbr, &book, &chapter, &verse);
 
         print!("Would you like to look up another verse (Y/N)? ");
         stdout().flush().unwrap();
@@ -107,6 +93,115 @@ fn main() {
             // exit the loop if the user does not answer y
             break;
         }
+    }
+}
+
+fn print_help() {
+    println!("RustBibleLookup {}", VERSION);
+    println!("Look up a King James Version verse from the command line.");
+    println!();
+    println!("usage:");
+    println!("  RustBibleLookup                      interactive prompts");
+    println!("  RustBibleLookup BOOK CHAPTER:VERSE   one-shot lookup");
+    println!("  RustBibleLookup BOOK CHAPTER VERSE   same thing");
+    println!();
+    println!("examples:");
+    println!("  RustBibleLookup John 3:16");
+    println!("  RustBibleLookup Ps 23 1");
+    println!("  RustBibleLookup \"1 Kings\" 2:3");
+    println!();
+    println!("Full book names and the abbreviations in Bible_Abbreviations.csv");
+    println!("(Gen, Ps, Rev, ...) both work. Every verse found is appended to");
+    println!("verses.txt in the current directory.");
+    println!();
+    println!("options:");
+    println!("  -h, --help       show this help");
+    println!("  -V, --version    print the version");
+}
+
+// turn the command line args into (BOOK, chapter, verse). The book can be
+// more than one word ("1 Kings", "Song of Solomon") so everything before the
+// chapter is joined back together.
+fn parse_reference(args: &[String]) -> Option<(String, String, String)> {
+    let joined = args.join(" ");
+    let words: Vec<&str> = joined.split_whitespace().collect();
+    if words.is_empty() {
+        return None;
+    }
+
+    let last = words[words.len() - 1];
+    let (book_words, chapter, verse) = if let Some((c, v)) = last.split_once(':') {
+        // "John 3:16"
+        (&words[..words.len() - 1], c, v)
+    } else if words.len() >= 3 {
+        // "John 3 16"
+        (&words[..words.len() - 2], words[words.len() - 2], last)
+    } else {
+        return None;
+    };
+
+    if book_words.is_empty() || chapter.is_empty() || verse.is_empty() {
+        return None;
+    }
+
+    Some((
+        book_words.join(" ").to_uppercase(),
+        chapter.to_string(),
+        verse.to_string(),
+    ))
+}
+
+// resolve the abbreviation, find the verse, print it (or the right error),
+// and append it to verses.txt. Returns true if the verse was found.
+fn lookup(
+    bible: &Bible,
+    abbr: &HashMap<String, String>,
+    book: &str,
+    chapter: &str,
+    verse: &str,
+) -> bool {
+    // check for abbvr
+    let full_book = match abbr.get(book) {
+        Some(name) => name.clone(),
+        None => book.to_string(),
+    };
+
+    // Try to find the verse
+    let result = find_verse(bible, &full_book, chapter, verse);
+
+    if result.0 {
+        //found
+
+        let verse_text = result.1;
+        let reference = format!("{} {}:{}", full_book, chapter, verse);
+        println!("The verse you requested is:");
+        let verse_text_pretty = pretty_print(&verse_text);
+        println!("\n{}:\n{}\n", reference, verse_text_pretty);
+
+        // add to verses.txt
+        let mut out_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("verses.txt")
+            .unwrap();
+        writeln!(out_file, "{} {}", reference, verse_text).unwrap();
+        true
+    } else {
+        // didn't find it
+        if result.1 == "book" {
+            println!("The Bible does not contain the book \"{}\".", full_book);
+        } else if result.1 == "chapter" {
+            println!(
+                "The book of {} does not have chapter {}.",
+                full_book, chapter
+            );
+        } else if result.1 == "verse" {
+            println!(
+                "Chapter {} of {} does not have verse {}.",
+                chapter, full_book, verse
+            );
+        }
+        false
     }
 }
 
