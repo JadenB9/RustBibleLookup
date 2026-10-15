@@ -143,18 +143,18 @@ fn load_bible(text: &str) -> Bible {
             continue;
         }
 
-        if line.starts_with("THE BOOK OF ") {
+        if let Some(name) = line.strip_prefix("THE BOOK OF ") {
             // found a new book
-            curr_book = line[12..].trim().to_uppercase();
+            curr_book = name.trim().to_uppercase();
             curr_chap = String::new();
 
             // add the book to our hashmap if it doesn't exist
             if !bible.contains_key(&curr_book) {
                 bible.insert(curr_book.clone(), HashMap::new());
             }
-        } else if line.starts_with("CHAPTER ") {
+        } else if let Some(num) = line.strip_prefix("CHAPTER ") {
             // found new chapter
-            curr_chap = line[8..].trim().to_string();
+            curr_chap = num.trim().to_string();
             // add the chapter to the book
             if !curr_book.is_empty() && !curr_chap.is_empty() {
                 let book_map = bible.get_mut(&curr_book).unwrap();
@@ -162,9 +162,9 @@ fn load_bible(text: &str) -> Bible {
                     book_map.insert(curr_chap.clone(), HashMap::new());
                 }
             }
-        } else if line.starts_with("PSALM ") {
+        } else if let Some(num) = line.strip_prefix("PSALM ") {
             // for the different format in psalms
-            curr_chap = line[6..].trim().to_string();
+            curr_chap = num.trim().to_string();
             // add the chapter to the book
             if !curr_book.is_empty() && !curr_chap.is_empty() {
                 let book_map = bible.get_mut(&curr_book).unwrap();
@@ -174,7 +174,7 @@ fn load_bible(text: &str) -> Bible {
             }
         } else if !curr_book.is_empty()
             && !curr_chap.is_empty()
-            && line.chars().next().unwrap().is_digit(10)
+            && line.starts_with(|c: char| c.is_ascii_digit())
         {
             // this is a verse line
             let parts: Vec<&str> = line.trim().splitn(2, ' ').collect();
