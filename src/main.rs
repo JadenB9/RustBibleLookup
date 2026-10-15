@@ -341,3 +341,143 @@ fn pretty_print(text: &str) -> String {
 
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn loads_first_and_last_verses() {
+        let bible = load_bible(BIBLE_TEXT);
+        assert_eq!(
+            bible["GENESIS"]["1"]["1"],
+            "In the beginning God created the heaven and the earth."
+        );
+        assert_eq!(
+            bible["REVELATION"]["22"]["21"],
+            "The grace of our Lord Jesus Christ [be] with you all. Amen."
+        );
+    }
+
+    #[test]
+    fn psalms_use_the_psalm_n_heading() {
+        let bible = load_bible(BIBLE_TEXT);
+        assert_eq!(
+            bible["PSALMS"]["23"]["1"],
+            "The LORD [is] my shepherd; I shall not want."
+        );
+        assert_eq!(bible["PSALMS"].len(), 150);
+    }
+
+    #[test]
+    fn multi_word_book_names_work() {
+        let bible = load_bible(BIBLE_TEXT);
+        let result = find_verse(&bible, "SONG OF SOLOMON", "6", "7");
+        assert!(result.0);
+        assert_eq!(bible.len(), 66);
+    }
+
+    #[test]
+    fn find_verse_reports_which_part_is_missing() {
+        let bible = load_bible(BIBLE_TEXT);
+        assert_eq!(
+            find_verse(&bible, "JAB", "42", "17"),
+            (false, "book".to_string())
+        );
+        assert_eq!(
+            find_verse(&bible, "JOB", "43", "17"),
+            (false, "chapter".to_string())
+        );
+        assert_eq!(
+            find_verse(&bible, "JOB", "42", "18"),
+            (false, "verse".to_string())
+        );
+        assert!(find_verse(&bible, "JOB", "42", "17").0);
+    }
+
+    #[test]
+    fn abbreviations_are_uppercased_both_sides() {
+        let abbr = load_abbreviations(ABBR_TEXT);
+        assert_eq!(abbr["GEN"], "GENESIS");
+        assert_eq!(abbr["1 KINGS"], "FIRST KINGS");
+        assert_eq!(abbr["PS"], "PSALMS");
+        // lookups happen on the uppercased user input, so "gen" works too
+        assert_eq!(
+            abbr.get(&"gen".to_uppercase()),
+            Some(&"GENESIS".to_string())
+        );
+        assert!(!abbr.contains_key("NOPE"));
+    }
+
+    #[test]
+    fn parse_reference_accepts_both_forms() {
+        let args = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let john = Some(("JOHN".to_string(), "3".to_string(), "16".to_string()));
+        assert_eq!(parse_reference(&args(&["John", "3:16"])), john);
+        assert_eq!(parse_reference(&args(&["John", "3", "16"])), john);
+        assert_eq!(
+            parse_reference(&args(&["1 Kings", "2:3"])),
+            Some(("1 KINGS".to_string(), "2".to_string(), "3".to_string()))
+        );
+        assert_eq!(
+            parse_reference(&args(&["Song", "of", "Solomon", "6", "7"])),
+            Some((
+                "SONG OF SOLOMON".to_string(),
+                "6".to_string(),
+                "7".to_string()
+            ))
+        );
+        assert_eq!(parse_reference(&args(&["John"])), None);
+        assert_eq!(parse_reference(&args(&["John", "3:"])), None);
+        assert_eq!(parse_reference(&args(&["3:16"])), None);
+    }
+
+    #[test]
+    fn pretty_print_leaves_short_text_alone() {
+        let short = "The LORD [is] my shepherd; I shall not want.";
+        assert_eq!(pretty_print(short), short);
+    }
+
+    #[test]
+    fn pretty_print_wraps_at_a_space_before_80() {
+        let long = "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.";
+        let wrapped = pretty_print(long);
+        let lines: Vec<&str> = wrapped.lines().collect();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(
+            lines[0],
+            "For God so loved the world, that he gave his only begotten Son, that whosoever"
+        );
+        assert_eq!(
+            lines[1],
+            "believeth in him should not perish, but have everlasting life."
+        );
+        for line in &lines {
+            assert!(line.len() <= 80);
+            assert!(!line.starts_with(' '));
+        }
+        // nothing is lost in the wrap, only the spaces at the cut turn into newlines
+        assert_eq!(wrapped.replace('\n', " "), long);
+    }
+
+    #[test]
+    fn pretty_print_cuts_hard_when_there_is_no_space() {
+        let no_spaces = "a".repeat(200);
+        let wrapped = pretty_print(&no_spaces);
+        for line in wrapped.lines() {
+            assert!(line.chars().count() <= 80);
+        }
+        assert_eq!(wrapped.replace('\n', ""), no_spaces);
+    }
+
+    #[test]
+    fn pretty_print_does_not_panic_on_non_ascii() {
+        // multi-byte characters used to be sliced by byte index
+        let text = "é ".repeat(100);
+        let wrapped = pretty_print(&text);
+        for line in wrapped.lines() {
+            assert!(line.chars().count() <= 80);
+        }
+        assert_eq!(wrapped.replace('\n', " ").trim_end(), text.trim_end());
+    }
+}
